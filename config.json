@@ -23,7 +23,7 @@
   "password":
   {
 	"label": "Password",
-	"type": "String",
+	"type": "Password",
 	"required": true,
 	"help": "Password for MySQL Server Authentication."
   },
