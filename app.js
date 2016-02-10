@@ -6,6 +6,7 @@ var async         = require('async'),
 	isNil         = require('lodash.isnil'),
 	isEmpty       = require('lodash.isempty'),
 	isNumber      = require('lodash.isnumber'),
+	isString      = require('lodash.isstring'),
 	isBoolean     = require('lodash.isboolean'),
 	isPlainObject = require('lodash.isplainobject'),
 	tableName, parseFields, pool;
@@ -79,9 +80,9 @@ platform.on('data', function (data) {
 					if (isBoolean(datum))
 						processedDatum = datum;
 					else {
-						if (isNumber(datum) && datum === 1)
+						if ((isString(datum) && datum.toLocaleLowerCase() === 'true') || (isNumber(datum) && datum === 1))
 							processedDatum = true;
-						else if (isNumber(datum) && datum === 0)
+						else if ((isString(datum) && datum.toLocaleLowerCase() === 'false') || (isNumber(datum) && datum === 0))
 							processedDatum = false;
 						else
 							processedDatum = datum;
@@ -97,13 +98,21 @@ platform.on('data', function (data) {
 				}
 			}
 			catch (e) {
+				if (isPlainObject(datum))
+					processedDatum = JSON.stringify(datum);
+				else
+					processedDatum = datum;
+
 				console.error('Data conversion error in MySQL.', e);
 				platform.handleException(e);
-				processedDatum = datum;
 			}
 		}
-		else if (!isNil(datum) && isEmpty(field.data_type))
-			processedDatum = datum;
+		else if (!isNil(datum) && isEmpty(field.data_type)) {
+			if (isPlainObject(datum))
+				processedDatum = JSON.stringify(datum);
+			else
+				processedDatum = datum;
+		}
 		else
 			processedDatum = null;
 
@@ -158,20 +167,24 @@ platform.once('ready', function (options) {
 
 	async.forEachOf(parseFields, (field, key, callback) => {
 		if (isEmpty(field.source_field))
-			callback(new Error(`Source field is missing for ${key} in MySQL Plugin`));
+			callback(new Error(`Source field is missing for ${key} in the fields configuration parameter.`));
 		else if (field.data_type && (field.data_type !== 'String' &&
 			field.data_type !== 'Integer' && field.data_type !== 'Float' &&
 			field.data_type !== 'Boolean' && field.data_type !== 'Date' &&
 			field.data_type !== 'DateTime')) {
 
-			callback(new Error(`Invalid Data Type for ${key} allowed data types are (String, Integer, Float, Boolean, Date, DateTime) in MySQL Plugin`));
+			callback(new Error(`Invalid Data Type for ${key} allowed data types are (String, Integer, Float, Boolean, Date, DateTime) in the fields mapping configuration parameter.`));
 		}
 		else
 			callback();
 	}, (error) => {
 		if (error) {
-			console.error('Error parsing JSON field configuration for MySQL.', error);
-			return platform.handleException(new Error('Error parsing JSON field configuration for MySQL.'));
+			console.error('Error parsing fields mapping configuration for MySQL Plugin.', error);
+			platform.handleException(new Error('Error parsing fields mapping configuration for MySQL Plugin.'));
+
+			return setTimeout(() => {
+				process.exit(1);
+			}, 2000);
 		}
 
 		var mysql = require('mysql');
