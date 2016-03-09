@@ -92,7 +92,10 @@ describe('Storage', function () {
 		it('should process the data', function (done) {
 			storage.send({
 				type: 'data',
-				data: record
+				data: [
+					record,
+					record
+				]
 			}, done);
 		});
 	});
