@@ -26,10 +26,10 @@ MySQL Storage Plugin for the Reekoh IoT Platform.
 1. Input for this field is in JSON format {"(field_name)" : {"source_field" : "value", "data_type": "value", "format": "value"}}.
 2. field_name will be the name of the column in the mysql Table
 3  source_field (required) value will be the name of the field in the JSON Data passed to the plugin
-4  data_type there are 5 available data types that will convert data to it's proper type before saving
-   we have String, Integer, Float, Boolean and DateTime leaving this blank will just use the current data for the field
+4  data_type there are 6 available data types that will convert data to it's proper type before saving
+   we have String, Integer, Float, Boolean, Date and DateTime leaving this blank will just use the current data for the field
 5. format is only available for DateTime data_type this will allow users to format the date/time before saving
-   i.e. (YYYY-MM-DD HH:mm:ss) kindly refer to the moment node module for more details and the accepted format
+   i.e. (YYYY-MM-DD HH:mm:ss) kindly refer to the [MomentJS docs](http://momentjs.com/docs/) for more details.
    of mysql
 6. JSON Data is not supported as a data_type but you can save it if there is a field in MySQL
 

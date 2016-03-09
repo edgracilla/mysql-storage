@@ -19,6 +19,7 @@ var record = {
 	co2: '11%',
 	temp: 23,
 	quality: 11.25,
+	power: 90,
 	reading_time: '2015-11-27T11:04:13.539Z',
 	metadata: '{"metadata_json": "reekoh metadata json"}',
 	random_data: 'abcdefg',
@@ -69,6 +70,7 @@ describe('Storage', function () {
 							co2_field: {source_field: 'co2', data_type: 'String'},
 							temp_field: {source_field: 'temp', data_type: 'Integer'},
 							quality_field: {source_field: 'quality', data_type: 'Float'},
+							'Power(KW)': {source_field: 'power', data_type: 'Integer'},
 							reading_time_field: {
 								source_field: 'reading_time',
 								data_type: 'DateTime',
@@ -112,30 +114,29 @@ describe('Storage', function () {
 			connection.connect(function (err) {
 				assert.ifError(err);
 
-				connection.query('SELECT * FROM ' + TABLE + ' WHERE _id = ' + _ID, function (error, result, fields) {
-					should.exist(result[0]);
-					var resp = result[0];
+				setTimeout(() => {
+					connection.query('SELECT * FROM ' + TABLE + ' WHERE _id = ' + _ID, function (error, result, fields) {
+						should.exist(result[0]);
+						var resp = result[0];
 
-					//cleanup for JSON stored string
-					var cleanMetadata = resp.metadata_field.replace(/\\"/g, '"');
-					var str = JSON.stringify(record.metadata);
-					var str2 = JSON.stringify(cleanMetadata);
+						//cleanup for JSON stored string
+						var cleanMetadata = resp.metadata_field.replace(/\\"/g, '"');
+						var str = JSON.stringify(record.metadata);
+						var str2 = JSON.stringify(cleanMetadata);
 
-					should.equal(record.co2, resp.co2_field, 'Data validation failed. Field: co2');
-					should.equal(record.temp, resp.temp_field, 'Data validation failed. Field: temp');
-					should.equal(record.quality, resp.quality_field, 'Data validation failed. Field: quality');
-					should.equal(record.random_data, resp.random_data_field, 'Data validation failed. Field: random_data');
-					should.equal(moment(record.reading_time).format('YYYY-MM-DD HH:mm:ss'),
-						moment(resp.reading_time_field).format('YYYY-MM-DD HH:mm:ss'),
-						'Data validation failed. Field: reading_time');
-					should.equal(str, str2, 'Data validation failed. Field: metadata');
+						should.equal(record.co2, resp.co2_field, 'Data validation failed. Field: co2');
+						should.equal(record.temp, resp.temp_field, 'Data validation failed. Field: temp');
+						should.equal(record.quality, resp.quality_field, 'Data validation failed. Field: quality');
+						should.equal(record.random_data, resp.random_data_field, 'Data validation failed. Field: random_data');
+						should.equal(moment(record.reading_time).format('YYYY-MM-DD HH:mm:ss'),
+							moment(resp.reading_time_field).format('YYYY-MM-DD HH:mm:ss'),
+							'Data validation failed. Field: reading_time');
+						should.equal(str, str2, 'Data validation failed. Field: metadata');
 
-					done();
-				});
+						done();
+					});
+				}, 4000);
 			});
-
-
 		});
 	});
-
 });
