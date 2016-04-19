@@ -1,49 +1,42 @@
 {
-  "host":
-  {
+  "host": {
 	"label": "Host",
 	"type": "String",
 	"required": true,
 	"help": "Host server of MySQL."
   },
-  "port":
-  {
+  "port": {
 	"label": "Port",
 	"type": "Number",
 	"required": true,
 	"help": "Listening port of the MySQL Host Server."
   },
-  "user":
-  {
+  "user": {
 	"label": "User",
 	"type": "String",
 	"required": true,
 	"help": "Username for MySQL Server Authentication."
   },
-  "password":
-  {
+  "password": {
 	"label": "Password",
 	"type": "Password",
 	"required": true,
 	"help": "Password for MySQL Server Authentication."
   },
-  "database":
-  {
+  "database": {
 	"label": "Database",
 	"type": "String",
 	"required": true,
 	"help": "Database name on the MySQL Server."
   },
-  "table":
-  {
+  "table": {
 	"label": "Table",
 	"type": "String",
 	"required": true,
 	"help": "Table name in the MySQL Database where data will be written into."
   },
-  "fields":
-  {
-	"label": "Fields",
+  "field_mapping": {
+	"label": "Field Mapping",
 	"type": "JSON",
 	"required": true,
 	"help": "List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\", \"data_type\": \"value\", \"format\": \"value\"}}. field_name will be the name of the column in the MySQL Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin, data_type (optional) there are 6 available data types that will convert data to it's proper type before saving we have String, Integer, Float, Boolean, Date and DateTime leaving this blank will just use the current data for the field, format is only available for Date and DateTime data_type this will allow users to format the date/time before saving i.e. (YYYY-MM-DD HH:mm:ss) kindly refer to the MomentJS docs for more details (http://momentjs.com/docs/)."

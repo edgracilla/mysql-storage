@@ -9,21 +9,17 @@ var async         = require('async'),
 	isString      = require('lodash.isstring'),
 	isBoolean     = require('lodash.isboolean'),
 	isPlainObject = require('lodash.isplainobject'),
-	isArray = require('lodash.isarray'),
-	tableName, parseFields, pool;
+	isArray       = require('lodash.isarray'),
+	tableName, fieldMapping, pool;
 
 let insertData = function (data, callback) {
 	pool.getConnection((connectionError, connection) => {
 		if (connectionError) return callback(connectionError);
 
-		connection.query(`INSERT INTO  ${tableName} SET ?`, data, (insertError, result) => {
+		connection.query(`INSERT INTO ${tableName} SET ?`, data, (insertError, result) => {
 			connection.release();
 
-			if (insertError) {
-				console.error('Failed to save record in MySQL.', insertError);
-				platform.handleException(insertError);
-			}
-			else {
+			if (!insertError) {
 				platform.log(JSON.stringify({
 					title: 'Record Successfully inserted to MySQL.',
 					data: result
@@ -35,10 +31,10 @@ let insertData = function (data, callback) {
 	});
 };
 
-let processData = (data) => {
+let processData = function (data, callback) {
 	let saveData = {};
 
-	async.forEachOf(parseFields, (field, key, callback) => {
+	async.forEachOf(fieldMapping, (field, key, done) => {
 		let datum = data[field.source_field],
 			processedDatum;
 
@@ -48,7 +44,7 @@ let processData = (data) => {
 					if (isPlainObject(datum))
 						processedDatum = JSON.stringify(datum);
 					else
-						processedDatum = ''.concat(datum);
+						processedDatum = `${datum}`;
 				}
 				else if (field.data_type === 'Integer') {
 					if (isNumber(datum))
@@ -78,12 +74,12 @@ let processData = (data) => {
 					if (isBoolean(datum))
 						processedDatum = datum;
 					else {
-						if ((isString(datum) && datum.toLocaleLowerCase() === 'true') || (isNumber(datum) && datum === 1))
+						if ((isString(datum) && datum.toLowerCase() === 'true') || (isNumber(datum) && datum === 1))
 							processedDatum = true;
-						else if ((isString(datum) && datum.toLocaleLowerCase() === 'false') || (isNumber(datum) && datum === 0))
+						else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0))
 							processedDatum = false;
 						else
-							processedDatum = datum;
+							processedDatum = (datum) ? true : false;
 					}
 				}
 				else if (field.data_type === 'Date' || field.data_type === 'DateTime') {
@@ -100,37 +96,40 @@ let processData = (data) => {
 					processedDatum = JSON.stringify(datum);
 				else
 					processedDatum = datum;
-
-				console.error('Data conversion error in MySQL.', e);
-				platform.handleException(e);
 			}
 		}
 		else if (!isNil(datum) && isEmpty(field.data_type)) {
 			if (isPlainObject(datum))
 				processedDatum = JSON.stringify(datum);
 			else
-				processedDatum = datum;
+				processedDatum = `${datum}`;
 		}
 		else
 			processedDatum = null;
 
 		saveData[key] = processedDatum;
 
-		callback();
+		done();
 	}, () => {
-		insertData(saveData, (error) => {
-			if (error) platform.handleException(error);
-		});
+		callback(null, saveData);
 	});
 };
 
 platform.on('data', function (data) {
-	if(isPlainObject(data)){
-		processData(data);
+	if (isPlainObject(data)) {
+		processData(data, (error, processedData) => {
+			insertData(processedData, (error) => {
+				if (error) platform.handleException(error);
+			});
+		});
 	}
-	else if(isArray(data)){
-		async.each(data, function(datum){
-			processData(datum);
+	else if (isArray(data)) {
+		async.each(data, function (datum) {
+			processData(datum, (error, processedData) => {
+				insertData(processedData, (error) => {
+					if (error) platform.handleException(error);
+				});
+			});
 		});
 	}
 	else
@@ -163,60 +162,65 @@ platform.on('close', function () {
  * Listen for the ready event.
  */
 platform.once('ready', function (options) {
-	let isEmpty = require('lodash.isempty');
-
-	try {
-		parseFields = JSON.parse(options.fields);
-	}
-	catch (ex) {
-		platform.handleException(new Error('Invalid option parameter: fields. Must be a valid JSON String.'));
-
-		return setTimeout(() => {
-			process.exit(1);
-		}, 2000);
-	}
-
-	async.forEachOf(parseFields, (field, key, callback) => {
-		if (isEmpty(field.source_field))
-			callback(new Error(`Source field is missing for ${key} in the fields configuration parameter.`));
-		else if (field.data_type && (field.data_type !== 'String' &&
-			field.data_type !== 'Integer' && field.data_type !== 'Float' &&
-			field.data_type !== 'Boolean' && field.data_type !== 'Date' &&
-			field.data_type !== 'DateTime')) {
-
-			callback(new Error(`Invalid Data Type for ${key} allowed data types are (String, Integer, Float, Boolean, Date, DateTime) in the fields mapping configuration parameter.`));
+	async.waterfall([
+		async.constant(options.field_mapping || '{}'),
+		async.asyncify(JSON.parse),
+		(obj, done) => {
+			fieldMapping = obj;
+			done();
 		}
-		else
-			callback();
-	}, (error) => {
-		if (error) {
-			console.error('Error parsing fields mapping configuration for MySQL Plugin.', error);
-			platform.handleException(new Error('Error parsing fields mapping configuration for MySQL Plugin.'));
+	], (parseError) => {
+		if (parseError) {
+			platform.handleException(new Error('Invalid field mapping. Must be a valid JSON String.'));
 
 			return setTimeout(() => {
 				process.exit(1);
 			}, 2000);
 		}
 
-		var mysql = require('mysql');
+		let isEmpty = require('lodash.isempty');
 
-		tableName = options.table;
+		async.forEachOf(fieldMapping, (field, key, callback) => {
+			if (isEmpty(field.source_field))
+				callback(new Error(`Source field is missing for ${key} in the field mapping.`));
+			else if (field.data_type && (field.data_type !== 'String' &&
+				field.data_type !== 'Integer' && field.data_type !== 'Float' &&
+				field.data_type !== 'Boolean' && field.data_type !== 'Date' &&
+				field.data_type !== 'DateTime')) {
 
-		pool = mysql.createPool({
-			host: options.host,
-			port: options.port,
-			user: options.user,
-			password: options.password,
-			database: options.database,
-			acquireTimeout: 20000
+				callback(new Error(`Invalid Data Type for ${key} allowed data types are (String, Integer, Float, Boolean, Date, DateTime) in the field mapping.`));
+			}
+			else
+				callback();
+		}, (error) => {
+			if (error) {
+				console.error('Error parsing field mapping.', error);
+				platform.handleException(error);
 
+				return setTimeout(() => {
+					process.exit(1);
+				}, 2000);
+			}
+
+			var mysql = require('mysql');
+
+			tableName = options.table;
+
+			pool = mysql.createPool({
+				host: options.host,
+				port: options.port,
+				user: options.user,
+				password: options.password,
+				database: options.database,
+				acquireTimeout: 15000
+			});
+
+			pool.on('error', (mysqlError) => {
+				platform.handleException(mysqlError);
+			});
+
+			platform.log('MySQL Storage initialized.');
+			platform.notifyReady();
 		});
-
-		pool.on('error', (mysqlError) => {
-			platform.handleException(mysqlError);
-		});
-
-		platform.log('MySQL Storage initialized.');
-		platform.notifyReady();
 	});
 });
