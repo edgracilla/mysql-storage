@@ -192,10 +192,10 @@ platform.once('ready', function (options) {
 			}
 			else
 				callback();
-		}, (error) => {
-			if (error) {
-				console.error('Error parsing field mapping.', error);
-				platform.handleException(error);
+		}, (fieldMapError) => {
+			if (fieldMapError) {
+				console.error('Error parsing field mapping.', fieldMapError);
+				platform.handleException(fieldMapError);
 
 				return setTimeout(() => {
 					process.exit(1);
