@@ -32,7 +32,7 @@ let insertData = function (data, callback) {
 };
 
 let processData = function (data, callback) {
-	let saveData = {};
+	let processedData = {};
 
 	async.forEachOf(fieldMapping, (field, key, done) => {
 		let datum = data[field.source_field],
@@ -107,11 +107,11 @@ let processData = function (data, callback) {
 		else
 			processedDatum = null;
 
-		saveData[key] = processedDatum;
+		processedData[key] = processedDatum;
 
 		done();
 	}, () => {
-		callback(null, saveData);
+		callback(null, processedData);
 	});
 };
 
