@@ -65,7 +65,7 @@ describe('Storage', function () {
 						password: PASSWORD,
 						database: DATABASE,
 						table: TABLE,
-						fields: JSON.stringify({
+						field_mapping: JSON.stringify({
 							_id: {source_field: '_id', data_type: 'Integer'},
 							co2_field: {source_field: 'co2', data_type: 'String'},
 							temp_field: {source_field: 'temp', data_type: 'Integer'},
@@ -92,10 +92,7 @@ describe('Storage', function () {
 		it('should process the data', function (done) {
 			storage.send({
 				type: 'data',
-				data: [
-					record,
-					record
-				]
+				data: record
 			}, done);
 		});
 	});
