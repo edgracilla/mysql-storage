@@ -182,13 +182,13 @@ platform.once('ready', function (options) {
 
 		async.forEachOf(fieldMapping, (field, key, callback) => {
 			if (isEmpty(field.source_field))
-				callback(new Error(`Source field is missing for ${key} in the field mapping.`));
+				callback(new Error(`Source field is missing for ${key} in field mapping.`));
 			else if (field.data_type && (field.data_type !== 'String' &&
 				field.data_type !== 'Integer' && field.data_type !== 'Float' &&
 				field.data_type !== 'Boolean' && field.data_type !== 'Date' &&
 				field.data_type !== 'DateTime')) {
 
-				callback(new Error(`Invalid Data Type for ${key} allowed data types are (String, Integer, Float, Boolean, Date, DateTime) in the field mapping.`));
+				callback(new Error(`Invalid Data Type for ${key} in field mapping. Allowed data types are String, Integer, Float, Boolean, Date, DateTime.`));
 			}
 			else
 				callback();
