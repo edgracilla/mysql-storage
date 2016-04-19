@@ -9,6 +9,7 @@ var async         = require('async'),
 	isString      = require('lodash.isstring'),
 	isBoolean     = require('lodash.isboolean'),
 	isPlainObject = require('lodash.isplainobject'),
+	isArray = require('lodash.isarray'),
 	tableName, parseFields, pool;
 
 let insertData = function (data, callback) {
@@ -34,10 +35,7 @@ let insertData = function (data, callback) {
 	});
 };
 
-/*
- * Listen for the data event.
- */
-platform.on('data', function (data) {
+let processData = (data) => {
 	let saveData = {};
 
 	async.forEachOf(parseFields, (field, key, callback) => {
@@ -124,6 +122,19 @@ platform.on('data', function (data) {
 			if (error) platform.handleException(error);
 		});
 	});
+};
+
+platform.on('data', function (data) {
+	if(isPlainObject(data)){
+		processData(data);
+	}
+	else if(isArray(data)){
+		async.each(data, function(datum){
+			processData(datum);
+		});
+	}
+	else
+		platform.handleException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`));
 });
 
 /*
