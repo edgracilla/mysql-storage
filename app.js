@@ -82,11 +82,13 @@ let processData = function (data, callback) {
 							processedDatum = (datum) ? true : false;
 					}
 				}
-				else if (field.data_type === 'Date' || field.data_type === 'DateTime') {
-					if (moment(datum).isValid() && isEmpty(field.format))
-						processedDatum = datum;
-					else if (moment(datum).isValid() && !isEmpty(field.format))
-						processedDatum = moment(datum).format(field.format);
+				else if (field.data_type === 'Date' || field.data_type === 'DateTime' || field.data_type === 'Timestamp') {
+					if (isEmpty(field.format) && moment(datum).isValid())
+						processedDatum = moment(datum).toDate();
+					else if (!isEmpty(field.format) && moment(datum, field.format).isValid())
+						processedDatum = moment(datum, field.format).toDate();
+					else if (!isEmpty(field.format) && moment(datum).isValid())
+						processedDatum = moment(datum).toDate();
 					else
 						processedDatum = datum;
 				}
@@ -162,6 +164,8 @@ platform.on('close', function () {
  * Listen for the ready event.
  */
 platform.once('ready', function (options) {
+	tableName = options.table;
+
 	async.waterfall([
 		async.constant(options.field_mapping || '{}'),
 		async.asyncify(JSON.parse),
@@ -175,7 +179,7 @@ platform.once('ready', function (options) {
 
 			return setTimeout(() => {
 				process.exit(1);
-			}, 2000);
+			}, 5000);
 		}
 
 		let isEmpty = require('lodash.isempty');
@@ -186,9 +190,9 @@ platform.once('ready', function (options) {
 			else if (field.data_type && (field.data_type !== 'String' &&
 				field.data_type !== 'Integer' && field.data_type !== 'Float' &&
 				field.data_type !== 'Boolean' && field.data_type !== 'Date' &&
-				field.data_type !== 'DateTime')) {
+				field.data_type !== 'DateTime' && field.data_type !== 'Timestamp')) {
 
-				callback(new Error(`Invalid Data Type for ${key} in field mapping. Allowed data types are String, Integer, Float, Boolean, Date, DateTime.`));
+				callback(new Error(`Invalid Data Type for ${key} in field mapping. Allowed data types are String, Integer, Float, Boolean, Date, DateTime and Timestamp.`));
 			}
 			else
 				callback();
@@ -199,12 +203,10 @@ platform.once('ready', function (options) {
 
 				return setTimeout(() => {
 					process.exit(1);
-				}, 2000);
+				}, 5000);
 			}
 
 			var mysql = require('mysql');
-
-			tableName = options.table;
 
 			pool = mysql.createPool({
 				host: options.host,

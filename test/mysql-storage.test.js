@@ -20,7 +20,7 @@ var record = {
 	temp: 23,
 	quality: 11.25,
 	power: 90,
-	reading_time: '2015-11-27T11:04:13.539Z',
+	reading_time: '2015-11-27T11:04:13.000Z',
 	metadata: '{"metadata_json": "reekoh metadata json"}',
 	random_data: 'abcdefg',
 	is_normal: true
@@ -73,8 +73,7 @@ describe('Storage', function () {
 							'Power(KW)': {source_field: 'power', data_type: 'Integer'},
 							reading_time_field: {
 								source_field: 'reading_time',
-								data_type: 'DateTime',
-								format: 'YYYY-MM-DDTHH:mm:ss'
+								data_type: 'Timestamp'
 							},
 							metadata_field: {source_field: 'metadata', data_type: 'String'},
 							random_data_field: {source_field: 'random_data'},
