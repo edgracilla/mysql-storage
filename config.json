@@ -35,7 +35,7 @@
 	"required": true,
 	"help": "Table name in the MySQL Database where data will be written into."
   },
-  "field_mapping": {
+  "fieldMapping": {
 	"label": "Field Mapping",
 	"type": "JSON",
 	"required": true,

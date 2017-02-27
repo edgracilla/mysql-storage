@@ -1,228 +1,208 @@
-'use strict';
+'use strict'
 
-var async         = require('async'),
-	moment        = require('moment'),
-	platform      = require('./platform'),
-	isNil         = require('lodash.isnil'),
-	isEmpty       = require('lodash.isempty'),
-	isNumber      = require('lodash.isnumber'),
-	isString      = require('lodash.isstring'),
-	isBoolean     = require('lodash.isboolean'),
-	isPlainObject = require('lodash.isplainobject'),
-	isArray       = require('lodash.isarray'),
-	tableName, fieldMapping, pool;
+const reekoh = require('reekoh')
+const plugin = new reekoh.plugins.Storage()
 
-let insertData = function (data, callback) {
-	pool.getConnection((connectionError, connection) => {
-		if (connectionError) return callback(connectionError);
+const async = require('async')
+const moment = require('moment')
+const isNil = require('lodash.isnil')
+const isEmpty = require('lodash.isempty')
+const isNumber = require('lodash.isnumber')
+const isString = require('lodash.isstring')
+const isBoolean = require('lodash.isboolean')
+const isPlainObject = require('lodash.isplainobject')
 
-		connection.query(`INSERT INTO ${tableName} SET ?`, data, (insertError, result) => {
-			connection.release();
+let tableName = null
+let fieldMapping = null
+let pool = null
 
-			if (!insertError) {
-				platform.log(JSON.stringify({
-					title: 'Record Successfully inserted to MySQL.',
-					data: result
-				}));
-			}
+let insertData = (data, callback) => {
+  pool.getConnection((connectionError, connection) => {
+    if (connectionError) return callback(connectionError)
 
-			callback(insertError);
-		});
-	});
-};
+    connection.query(`INSERT INTO ${tableName} SET ?`, data, (insertError, result) => {
+      connection.release()
 
-let processData = function (data, callback) {
-	let processedData = {};
+      if (!insertError) {
+        plugin.log(JSON.stringify({
+          title: 'Record Successfully inserted to MySQL.',
+          data: result
+        }))
+      }
 
-	async.forEachOf(fieldMapping, (field, key, done) => {
-		let datum = data[field.source_field],
-			processedDatum;
+      if (!insertError) plugin.emit('processed')
+      callback(insertError)
+    })
+  })
+}
 
-		if (!isNil(datum) && !isEmpty(field.data_type)) {
-			try {
-				if (field.data_type === 'String') {
-					if (isPlainObject(datum))
-						processedDatum = JSON.stringify(datum);
-					else
-						processedDatum = `${datum}`;
-				}
-				else if (field.data_type === 'Integer') {
-					if (isNumber(datum))
-						processedDatum = datum;
-					else {
-						let intData = parseInt(datum);
+let processData = (data, callback) => {
+  let processedData = {}
 
-						if (isNaN(intData))
-							processedDatum = datum; //store original value
-						else
-							processedDatum = intData;
-					}
-				}
-				else if (field.data_type === 'Float') {
-					if (isNumber(datum))
-						processedDatum = datum;
-					else {
-						let floatData = parseFloat(datum);
+  async.forEachOf(fieldMapping, (field, key, done) => {
+    let datum = data[field.source_field]
+    let processedDatum = null
 
-						if (isNaN(floatData))
-							processedDatum = datum; //store original value
-						else
-							processedDatum = floatData;
-					}
-				}
-				else if (field.data_type === 'Boolean') {
-					if (isBoolean(datum))
-						processedDatum = datum;
-					else {
-						if ((isString(datum) && datum.toLowerCase() === 'true') || (isNumber(datum) && datum === 1))
-							processedDatum = true;
-						else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0))
-							processedDatum = false;
-						else
-							processedDatum = (datum) ? true : false;
-					}
-				}
-				else if (field.data_type === 'Date' || field.data_type === 'DateTime' || field.data_type === 'Timestamp') {
-					if (isEmpty(field.format) && moment(datum).isValid())
-						processedDatum = moment(datum).toDate();
-					else if (!isEmpty(field.format) && moment(datum, field.format).isValid())
-						processedDatum = moment(datum, field.format).toDate();
-					else if (!isEmpty(field.format) && moment(datum).isValid())
-						processedDatum = moment(datum).toDate();
-					else
-						processedDatum = datum;
-				}
-			}
-			catch (e) {
-				if (isPlainObject(datum))
-					processedDatum = JSON.stringify(datum);
-				else
-					processedDatum = datum;
-			}
-		}
-		else if (!isNil(datum) && isEmpty(field.data_type)) {
-			if (isPlainObject(datum))
-				processedDatum = JSON.stringify(datum);
-			else
-				processedDatum = `${datum}`;
-		}
-		else
-			processedDatum = null;
+    if (!isNil(datum) && !isEmpty(field.data_type)) {
+      try {
+        if (field.data_type === 'String') {
+          if (isPlainObject(datum)) {
+            processedDatum = JSON.stringify(datum)
+          } else {
+            processedDatum = `${datum}`
+          }
+        } else if (field.data_type === 'Integer') {
+          if (isNumber(datum)) {
+            processedDatum = datum
+          } else {
+            let intData = parseInt(datum)
 
-		processedData[key] = processedDatum;
+            if (isNaN(intData)) {
+              processedDatum = datum
+            } else {
+              processedDatum = intData
+            }
+          }
+        } else if (field.data_type === 'Float') {
+          if (isNumber(datum)) {
+            processedDatum = datum
+          } else {
+            let floatData = parseFloat(datum)
 
-		done();
-	}, () => {
-		callback(null, processedData);
-	});
-};
+            if (isNaN(floatData)) {
+              processedDatum = datum
+            } else {
+              processedDatum = floatData
+            }
+          }
+        } else if (field.data_type === 'Boolean') {
+          if (isBoolean(datum)) { processedDatum = datum } else {
+            if ((isString(datum) && datum.toLowerCase() === 'true') || (isNumber(datum) && datum === 1)) {
+              processedDatum = true
+            } else if ((isString(datum) && datum.toLowerCase() === 'false') || (isNumber(datum) && datum === 0)) {
+              processedDatum = false
+            } else {
+              processedDatum = !!datum
+            }
+          }
+        } else if (field.data_type === 'Date' || field.data_type === 'DateTime' || field.data_type === 'Timestamp') {
+          if (isEmpty(field.format) && moment(datum).isValid()) {
+            processedDatum = moment(datum).toDate()
+          } else if (!isEmpty(field.format) && moment(datum, field.format).isValid()) {
+            processedDatum = moment(datum, field.format).toDate()
+          } else if (!isEmpty(field.format) && moment(datum).isValid()) {
+            processedDatum = moment(datum).toDate()
+          } else {
+            processedDatum = datum
+          }
+        }
+      } catch (e) {
+        if (isPlainObject(datum)) {
+          processedDatum = JSON.stringify(datum)
+        } else {
+          processedDatum = datum
+        }
+      }
+    } else if (!isNil(datum) && isEmpty(field.data_type)) {
+      if (isPlainObject(datum)) {
+        processedDatum = JSON.stringify(datum)
+      } else {
+        processedDatum = `${datum}`
+      }
+    } else {
+      processedDatum = null
+    }
 
-platform.on('data', function (data) {
-	if (isPlainObject(data)) {
-		processData(data, (error, processedData) => {
-			insertData(processedData, (error) => {
-				if (error) platform.handleException(error);
-			});
-		});
-	}
-	else if (isArray(data)) {
-		async.each(data, function (datum) {
-			processData(datum, (error, processedData) => {
-				insertData(processedData, (error) => {
-					if (error) platform.handleException(error);
-				});
-			});
-		});
-	}
-	else
-		platform.handleException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`));
-});
+    processedData[key] = processedDatum
 
-/*
- * Event to listen to in order to gracefully release all resources bound to this service.
- */
-platform.on('close', function () {
-	let d = require('domain').create();
+    done()
+  }, () => {
+    callback(null, processedData)
+  })
+}
 
-	d.once('error', (error) => {
-		console.error(error);
-		platform.handleException(error);
-		platform.notifyClose();
-		d.exit();
-	});
+plugin.on('data', (data) => {
+  if (isPlainObject(data)) {
+    processData(data, (error, processedData) => {
+      if (error) return console.log(error)
 
-	d.run(() => {
-		pool.end((error) => {
-			if (error) platform.handleException(error);
-			platform.notifyClose();
-			d.exit();
-		});
-	});
-});
+      insertData(processedData, (error) => {
+        if (error) plugin.logException(error)
+      })
+    })
+  } else if (Array.isArray(data)) {
+    async.each(data, function (datum) {
+      processData(datum, (error, processedData) => {
+        if (error) return console.log(error)
+        insertData(processedData, (error) => {
+          if (error) plugin.logException(error)
+        })
+      })
+    })
+  } else {
+    plugin.logException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`))
+  }
+})
 
-/*
- * Listen for the ready event.
- */
-platform.once('ready', function (options) {
-	tableName = options.table;
+plugin.once('ready', () => {
+  let options = plugin.config
+  tableName = options.table
 
-	async.waterfall([
-		async.constant(options.field_mapping || '{}'),
-		async.asyncify(JSON.parse),
-		(obj, done) => {
-			fieldMapping = obj;
-			done();
-		}
-	], (parseError) => {
-		if (parseError) {
-			platform.handleException(new Error('Invalid field mapping. Must be a valid JSON String.'));
+  async.waterfall([
+    async.constant(options.field_mapping || '{}'),
+    async.asyncify(JSON.parse),
+    (obj, done) => {
+      fieldMapping = obj
+      done()
+    }
+  ], (parseError) => {
+    if (parseError) {
+      plugin.logException(new Error('Invalid field mapping. Must be a valid JSON String.'))
 
-			return setTimeout(() => {
-				process.exit(1);
-			}, 5000);
-		}
+      return setTimeout(() => {
+        process.exit(1)
+      }, 5000)
+    }
 
-		let isEmpty = require('lodash.isempty');
+    let isEmpty = require('lodash.isempty')
 
-		async.forEachOf(fieldMapping, (field, key, callback) => {
-			if (isEmpty(field.source_field))
-				callback(new Error(`Source field is missing for ${key} in field mapping.`));
-			else if (field.data_type && (field.data_type !== 'String' &&
-				field.data_type !== 'Integer' && field.data_type !== 'Float' &&
-				field.data_type !== 'Boolean' && field.data_type !== 'Date' &&
-				field.data_type !== 'DateTime' && field.data_type !== 'Timestamp')) {
+    async.forEachOf(fieldMapping, (field, key, callback) => {
+      if (isEmpty(field.source_field)) {
+        callback(new Error(`Source field is missing for ${key} in field mapping.`))
+      } else if (field.data_type && (field.data_type !== 'String' && field.data_type !== 'Integer' && field.data_type !== 'Float' && field.data_type !== 'Boolean' && field.data_type !== 'Date' && field.data_type !== 'DateTime' && field.data_type !== 'Timestamp')) {
+        callback(new Error(`Invalid Data Type for ${key} in field mapping. Allowed data types are String, Integer, Float, Boolean, Date, DateTime and Timestamp.`))
+      } else {
+        callback()
+      }
+    }, (fieldMapError) => {
+      if (fieldMapError) {
+        console.error('Error parsing field mapping.', fieldMapError)
+        plugin.logException(fieldMapError)
 
-				callback(new Error(`Invalid Data Type for ${key} in field mapping. Allowed data types are String, Integer, Float, Boolean, Date, DateTime and Timestamp.`));
-			}
-			else
-				callback();
-		}, (fieldMapError) => {
-			if (fieldMapError) {
-				console.error('Error parsing field mapping.', fieldMapError);
-				platform.handleException(fieldMapError);
+        return setTimeout(() => {
+          process.exit(1)
+        }, 5000)
+      }
 
-				return setTimeout(() => {
-					process.exit(1);
-				}, 5000);
-			}
+      let mysql = require('mysql')
 
-			var mysql = require('mysql');
+      pool = mysql.createPool({
+        host: options.host,
+        port: options.port,
+        user: options.user,
+        password: options.password,
+        database: options.database,
+        acquireTimeout: 15000
+      })
 
-			pool = mysql.createPool({
-				host: options.host,
-				port: options.port,
-				user: options.user,
-				password: options.password,
-				database: options.database,
-				acquireTimeout: 15000
-			});
+      pool.on('error', (mysqlError) => {
+        plugin.logException(mysqlError)
+      })
 
-			pool.on('error', (mysqlError) => {
-				platform.handleException(mysqlError);
-			});
+      plugin.log('MySQL Storage initialized.')
+      plugin.emit('init')
+    })
+  })
+})
 
-			platform.log('MySQL Storage initialized.');
-			platform.notifyReady();
-		});
-	});
-});
+module.exports = plugin
