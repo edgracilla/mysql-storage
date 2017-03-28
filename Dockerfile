@@ -1,20 +1,16 @@
-FROM node
+FROM node:boron
 
 MAINTAINER Reekoh
 
-WORKDIR /home
+RUN apt-get update && apt-get install -y build-essential
 
-# copy files
-ADD . /home
+RUN mkdir -p /home/node/mysql-storage
+COPY . /home/node/mysql-storage
+
+WORKDIR /home/node/mysql-storage
 
 # Install dependencies
-RUN npm install
+RUN npm install pm2 yarn -g
+RUN yarn install
 
-# setting need environment variables
-ENV INPUT_PIPE="demo.storage" \
-    CONFIG="{}" \
-    LOGGERS="" \
-    EXCEPTION_LOGGERS="" \
-    BROKER="amqp://guest:guest@172.17.0.2/"
-
-CMD ["node", "app"]
+CMD ["pm2-docker", "--json", "app.yml"]

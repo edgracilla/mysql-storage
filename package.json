@@ -13,28 +13,28 @@
     "url": "https://github.com/Reekoh/mysql-storage"
   },
   "dependencies": {
-    "reekoh": "^1.0.0",
-    "async": "^1.5.2",
-    "lodash.isboolean": "^3.0.3",
-    "lodash.isempty": "^4.2.1",
-    "lodash.isnil": "^4.0.0",
-    "lodash.isnumber": "^3.0.3",
-    "lodash.isplainobject": "^4.0.4",
-    "lodash.isstring": "^4.0.1",
-    "moment": "^2.13.0",
-    "mysql": "^2.10.2"
+    "reekoh": "=1.0.2",
+    "async": "=1.5.2",
+    "lodash.isboolean": "=3.0.3",
+    "lodash.isempty": "=4.2.1",
+    "lodash.isnil": "=4.0.0",
+    "lodash.isnumber": "=3.0.3",
+    "lodash.isplainobject": "=4.0.4",
+    "lodash.isstring": "=4.0.1",
+    "moment": "=2.13.0",
+    "mysql": "=2.10.2"
   },
   "devDependencies": {
-    "amqplib": "^0.5.1",
-    "gulp": "^3.9.1",
-    "gulp-cli": "^1.2.1",
-    "gulp-jshint": "^2.0.1",
-    "gulp-json-lint": "^0.1.0",
-    "gulp-mocha": "^2.2.0",
-    "gulp-plumber": "^1.1.0",
-    "gulp-standard": "^8.0.4",
-    "jshint": "^2.9.4",
-    "mocha": "^2.5.3",
-    "should": "^9.0.2"
+    "amqplib": "=0.5.1",
+    "gulp": "=3.9.1",
+    "gulp-cli": "=1.2.1",
+    "gulp-jshint": "=2.0.1",
+    "gulp-json-lint": "=0.1.0",
+    "gulp-mocha": "=2.2.0",
+    "gulp-plumber": "=1.1.0",
+    "gulp-standard": "=8.0.4",
+    "jshint": "=2.9.4",
+    "mocha": "=2.5.3",
+    "should": "=9.0.2"
   }
 }

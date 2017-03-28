@@ -1,0 +1,63 @@
+apiVersion: 1.0.0
+kind: Plugin
+metadata:
+  name: MySQL Storage
+  description: MySQL Storage Plugin for Reekoh IoT Platform. Enables a Reekoh Instance to integrate with MySQL RDMS to syncrhonize device data.
+  documentation: README.md
+  icon: asset/icon/reekoh200x200.png
+  signupLink: https://myservice.com/signup # ??
+  type: Storage
+  price: 0
+  tags:
+    - storage
+    - mysql
+    - sql
+  config:
+    host:
+      label: Host
+      type: String
+      maxLength: 1000
+      required: true
+      help: "Host server of MySQL."
+    port:
+      label: Port
+      type: Number
+      required: true
+      min: 1
+      max: 56353
+      help: "Listening port of the MySQL Host Server."
+    user:
+      label: User
+      type: String
+      maxLength: 1000
+      required: true
+      help: "Username for MySQL Server Authentication."
+    password:
+      label: Password
+      type: Password
+      maxLength: 1000
+      required: true
+      help: "Password for MySQL Server Authentication."
+    database:
+      label: Database
+      type: String
+      maxLength: 1000
+      required: true
+      help: "Database name on the MySQL Server."
+    table:
+      label: Table
+      type: String
+      maxLength: 1000
+      required: true
+      help: "Table name in the MySQL Database where data will be written into."
+    fieldMapping:
+      label: Field Mapping
+      maxLength: 1000
+      type: String
+      required: true
+      help: "List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\", \"data_type\": \"value\", \"format\": \"value\"}}. field_name will be the name of the column in the MySQL Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin, data_type (optional) there are 6 available data types that will convert data to it's proper type before saving we have String, Integer, Float, Boolean, Date, DateTime, and Timestamp leaving this blank will just use the current data for the field, format is only available for Date, DateTime, Timestamp data_type allowing users to specify the format of the device date/time data value. Kindly refer to the MomentJS docs for more details (http://momentjs.com/docs/#/parsing/string-format/)."
+
+  release:
+    version: 1.0.0
+    notes: path/to/RELEASENOTESv1.0.0.md # ??
+    image: path/to/docker/image # ??
